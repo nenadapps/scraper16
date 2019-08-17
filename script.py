@@ -1,9 +1,11 @@
-import datetime
-from random import randint, shuffle
-from time import sleep
-from urllib.request import Request, urlopen
 from bs4 import BeautifulSoup
+import datetime
+from random import randint
+from random import shuffle
 import re
+from time import sleep
+from urllib.request import Request
+from urllib.request import urlopen
 
 def get_html(url):
     html_content = ''
@@ -19,6 +21,7 @@ def get_html(url):
 def get_details(url):
     
     stamp = {}
+    
     try:
         html = get_html(url)
     except:
@@ -51,19 +54,13 @@ def get_details(url):
     except:
         stamp['category'] = None
 
-    try:
-        raw_text = html.select('.product-short-description')[0].get_text()
-        stamp['raw_text'] = raw_text.strip()
-    except:
-        stamp['raw_text'] = None
-
     # This website is in pounds, i.e. GBP
     stamp['currency'] = "GBP"
 
     # image_urls should be a list
     images = []                    
     try:
-        image_items = html.find_all("a", {"id" : re.compile('_EKM_PRODUCTIMAGE_LINK_*')})
+        image_items = html.find_all("a", {"id": re.compile('_EKM_PRODUCTIMAGE_LINK_*')})
         for image_item in image_items:
             img_href = image_item.get('href')
             if img_href != '#':
@@ -73,6 +70,36 @@ def get_details(url):
     except:
         pass
     
+    condition = {}
+    
+    try:
+        condition_items = html.select('.product-short-description table tr')
+        if condition_items:
+             
+            for condition_item in condition_items:
+                if condition_item.select('td'):
+                    condition_text = condition_item.select('td')[0].get_text()
+                    price = condition_item.select('td')[1].get_text()
+                    price = price.replace('£','').strip()
+                    condition[condition_text] = price
+                    stamp['condition'] = condition
+    except:
+        pass
+    
+    stamp['condition'] = condition
+    
+    try:
+        raw_text = html.select('.product-short-description')[0].get_text()
+        if stamp['condition']:
+            if ' Condition Price ' in raw_text:
+                raw_text_parts = raw_text.split(' Condition Price ')
+            else:
+                raw_text_parts = raw_text.split("\r\n")
+            raw_text = raw_text_parts[0]
+        stamp['raw_text'] = raw_text.replace('For details on the condition categories click here.', '').strip()
+    except:
+        stamp['raw_text'] = None
+  
     stamp['image_urls'] = images 
 
     # scrape date in format YYYY-MM-DD
@@ -83,6 +110,7 @@ def get_details(url):
     print(stamp)
     print('+++++++++++++')
     sleep(randint(25, 65))
+           
     return stamp
 
 def get_page_items(url):
@@ -128,16 +156,26 @@ def get_categories(category_url):
     try:
         for item in html.select('.category-item .viewitems-button a'):
             item_link = 'https://www.steveirwinstamps.co.uk/' + item.get('href')
-            items.append(item_link)
+            item_text = item.get_text().strip()
+            if 'View Items' in item_text:
+                items.append(item_link)
     except: 
         pass
 
     shuffle(items)
+    
     return items
-        
+
+def get_page_items_details(page_url):
+    while(page_url): 
+        page_items, page_url = get_page_items(page_url)
+        for page_item in page_items:
+            stamp = get_details(page_item)
+
 item_dict = {'Australia':'https://www.steveirwinstamps.co.uk/australia-1-c.asp',
     'New Zealand':'https://www.steveirwinstamps.co.uk/new-zealand-2-c.asp',
-    'Islands':'https://www.steveirwinstamps.co.uk/australian-territories-10-c.asp' 
+    'Islands':'https://www.steveirwinstamps.co.uk/australian-territories-10-c.asp', 
+    'Postal History':'https://www.steveirwinstamps.co.uk/australasian-postal-history-695-c.asp'
     }
     
 print(item_dict)  
@@ -145,14 +183,17 @@ print(item_dict)
 selection = input('Choose country: ')
             
 category_url = item_dict[selection]
-categories = get_categories(category_url)
-for category in categories:
-    categories2 = get_categories(category)
-    for category2 in categories2:
-        categories3 = get_categories(category2)
-        for category3 in categories3:
-            page_url = category3
-            while(page_url): 
-                page_items, page_url = get_page_items(page_url)
-                for page_item in page_items:
-                    stamp = get_details(page_item)
+if 'steveirwinstamps.co.uk' in category_url:
+    categories = get_categories(category_url)
+    for category in categories:
+        categories2 = get_categories(category)
+        if categories2:
+            for category2 in categories2:
+                categories3 = get_categories(category2)
+                if categories3:    
+                    for category3 in categories3:
+                        get_page_items_details(category3)
+                else:
+                    get_page_items_details(category2)
+        else:
+            get_page_items_details(category)

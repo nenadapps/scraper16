@@ -83,7 +83,7 @@ def get_details(url):
                     price = condition_item.select('td')[1].get_text()
                     price = price.replace('£','').strip()
                     condition[condition_text] = price
-                    stamp['condition'] = condition
+                    stamp['condition'] = condition.replace('\r\n\t\t\t\t','')
     except:
         pass
     

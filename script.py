@@ -1,3 +1,4 @@
+# SteveIrwin
 from bs4 import BeautifulSoup
 import datetime
 from random import randint
@@ -99,7 +100,9 @@ def get_details(url):
         stamp['raw_text'] = raw_text.replace('For details on the condition categories click here.', '').strip()
     except:
         stamp['raw_text'] = None
-  
+    if stamp['raw_text']==None and stamp['title']!=None:
+        stamp['raw_text']=stamp['title']
+
     stamp['image_urls'] = images 
 
     # scrape date in format YYYY-MM-DD

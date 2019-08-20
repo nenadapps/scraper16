@@ -78,24 +78,28 @@ def get_details(url):
              
             for condition_item in condition_items:
                 if condition_item.select('td'):
-                    condition_text = condition_item.select('td')[0].get_text()
-                    price = condition_item.select('td')[1].get_text()
-                    price = price.replace('£','').strip()
-                    condition[condition_text] = price
-                    stamp['condition'] = condition
+                    condition_text = condition_item.select('td')[0].get_text().strip()
+                    if 'Postal Outlet' not in condition_text:
+                        price = condition_item.select('td')[1].get_text().strip()
+                        price = price.replace('£','').strip()
+                        condition[condition_text] = price
+                        stamp['condition'] = condition
     except:
         pass
     
     stamp['condition'] = condition
     
     try:
-        raw_text = html.select('.product-short-description')[0].get_text()
+        raw_text = html.select('.product-short-description')[0].get_text().strip()
         if stamp['condition']:
             if ' Condition Price ' in raw_text:
                 raw_text_parts = raw_text.split(' Condition Price ')
-            else:
+            elif "\n\n\n\n" in raw_text:
+                raw_text_parts = raw_text.split("\n\n\n\n")    
+            elif "\r\n" in raw_text:
                 raw_text_parts = raw_text.split("\r\n")
-            raw_text = raw_text_parts[0]
+            if raw_text_parts[0]:    
+                raw_text = raw_text_parts[0]
         stamp['raw_text'] = raw_text.replace('For details on the condition categories click here.', '').strip()
     except:
         stamp['raw_text'] = None

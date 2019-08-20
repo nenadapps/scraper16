@@ -1,3 +1,4 @@
+# SteveIrwin
 from bs4 import BeautifulSoup
 import datetime
 from random import randint
@@ -8,6 +9,7 @@ from urllib.request import Request
 from urllib.request import urlopen
 
 def get_html(url):
+    
     html_content = ''
     try:
         req = Request(url, headers={'User-Agent': 'Mozilla/5.0'}) #hdr)
@@ -78,10 +80,10 @@ def get_details(url):
              
             for condition_item in condition_items:
                 if condition_item.select('td'):
-                    condition_text = condition_item.select('td')[0].get_text().strip()
+                    condition_text = condition_item.select('td')[0].get_text().replace('\r\n\t\t\t\t','').strip()
                     if 'Postal Outlet' not in condition_text:
                         price = condition_item.select('td')[1].get_text().strip()
-                        price = price.replace('£','').strip()
+                        price = price.replace('£','').replace('\r\n\t\t\t\t','').strip()
                         condition[condition_text] = price
                         stamp['condition'] = condition
     except:
@@ -103,7 +105,9 @@ def get_details(url):
         stamp['raw_text'] = raw_text.replace('For details on the condition categories click here.', '').strip()
     except:
         stamp['raw_text'] = None
-  
+    if stamp['raw_text']==None and stamp['title']!=None:
+        stamp['raw_text'] = stamp['title']
+
     stamp['image_urls'] = images 
 
     # scrape date in format YYYY-MM-DD
@@ -129,7 +133,7 @@ def get_page_items(url):
 
     try:
         for item in html.select('.viewitems-button a'):
-            item_link = 'https://www.steveirwinstamps.co.uk/' + item.get('href').replace('&amp;', '&')
+            item_link = 'https://www.steveirwinstamps.co.uk/' + item.get('href').replace('&amp;', '&').strip()
             items.append(item_link)
     except:
         pass
